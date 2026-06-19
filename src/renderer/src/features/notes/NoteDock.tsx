@@ -6,7 +6,7 @@ import { AuthScreen } from '@/features/auth/AuthScreen'
 import { LockConfirmModal } from '@/features/auth/LockConfirmModal'
 import { dockApi } from '@/services/backend'
 import { useDockStore } from '@/store/useDockStore'
-import type { Note, Theme, AuthState } from '@/types/domain'
+import type { AppMetrics, Note, Theme, AuthState } from '@/types/domain'
 
 // Fallback OneDrive functions
 const fallbackAuthenticateWithOneDrive = async () => ({
@@ -119,6 +119,22 @@ function formatReminderDate(value: string): string {
     hour: 'numeric',
     minute: '2-digit'
   }).format(date)
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unitIndex = 0
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+
+  return `${value.toFixed(1)} ${units[unitIndex]}`
 }
 
 function normalizeWikiTarget(value: string): string {
@@ -1014,6 +1030,108 @@ function SettingsModal({
   )
 }
 
+function MetricsModal({
+  isOpen,
+  isLoading,
+  metrics,
+  error,
+  onClose,
+  onRefresh
+}: {
+  isOpen: boolean
+  isLoading: boolean
+  metrics: AppMetrics | null
+  error: string | null
+  onClose: () => void
+  onRefresh: () => Promise<void>
+}): JSX.Element | null {
+  if (!isOpen) {
+    return null
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(5,8,12,0.84)] px-4 backdrop-blur-xl">
+      <motion.div
+        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 14, scale: 0.98 }}
+        transition={{ duration: 0.18 }}
+        className="w-full max-w-[620px] overflow-hidden rounded-[32px] border border-white/[0.08] bg-[rgba(11,15,21,0.96)] shadow-[0_40px_120px_rgba(0,0,0,0.35)]"
+      >
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.34em] text-[var(--sd-muted)]">Diagnostics</p>
+            <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em] text-[var(--sd-text)]">Memory & Database Stats</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void onRefresh()}
+              disabled={isLoading}
+              className="rounded-full border border-[var(--sd-border)] bg-white/[0.04] px-4 py-2 text-xs text-[var(--sd-text)] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-[var(--sd-border)] bg-white/[0.04] px-4 py-2 text-xs text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {isLoading ? (
+            <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-6 text-center text-[var(--sd-muted)]">
+              Loading metrics...
+            </div>
+          ) : error ? (
+            <div className="rounded-[24px] border border-[rgba(255,110,129,0.2)] bg-[rgba(255,110,129,0.08)] p-6 text-sm text-[var(--sd-text)]">
+              <p className="font-semibold text-[var(--sd-text)]">Unable to load stats</p>
+              <p className="mt-2 text-[var(--sd-muted)]">{error}</p>
+            </div>
+          ) : !metrics ? (
+            <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-6 text-center text-[var(--sd-muted)]">
+              No metrics available.
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-5">
+                <p className="text-sm font-medium text-[var(--sd-text)]">Database</p>
+                <p className="mt-2 text-xs text-[var(--sd-muted)] break-all">{metrics.databasePath}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-5">
+                  <p className="text-sm font-medium text-[var(--sd-text)]">Database size</p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--sd-text)]">{formatBytes(metrics.databaseSizeBytes)}</p>
+                </div>
+                <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-5">
+                  <p className="text-sm font-medium text-[var(--sd-text)]">Notes in DB</p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--sd-text)]">{metrics.notesCount}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-5">
+                  <p className="text-sm font-medium text-[var(--sd-text)]">Memory usage</p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--sd-text)]">{formatBytes(metrics.memoryUsageBytes)}</p>
+                </div>
+                <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-5">
+                  <p className="text-sm font-medium text-[var(--sd-text)]">Goroutines</p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--sd-text)]">{metrics.goroutines}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 function DatabasePickerModal({
   isOpen,
   storageInfo,
@@ -1682,6 +1800,10 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
   const [isDatabasePickerOpen, setIsDatabasePickerOpen] = useState(true)
   const [isGraphOpen, setIsGraphOpen] = useState(false)
   const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [isMetricsOpen, setIsMetricsOpen] = useState(false)
+  const [isMetricsLoading, setIsMetricsLoading] = useState(false)
+  const [metrics, setMetrics] = useState<AppMetrics | null>(null)
+  const [metricsError, setMetricsError] = useState<string | null>(null)
   const [isLockConfirmOpen, setIsLockConfirmOpen] = useState(false)
   const [authState, setAuthState] = useState<AuthState | null>(initialAuthState || null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -1728,6 +1850,39 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
     const timer = window.setInterval(() => setNow(Date.now()), 30000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    if (!isMetricsOpen) {
+      return
+    }
+
+    let cancelled = false
+    setIsMetricsLoading(true)
+    setMetricsError(null)
+
+    async function loadMetrics() {
+      try {
+        const appMetrics = await dockApi.getAppMetrics()
+        if (!cancelled) {
+          setMetrics(appMetrics)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMetricsError(error instanceof Error ? error.message : 'Failed to load metrics.')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsMetricsLoading(false)
+        }
+      }
+    }
+
+    void loadMetrics()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isMetricsOpen])
 
   // Reload auth state after workspace is selected
   useEffect(() => {
@@ -1795,6 +1950,15 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
       setSelectedNoteIds(new Set())
       selectNote(id)
     }
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    await deleteNote(id)
+    setSelectedNoteIds((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }
 
   const handleBulkDelete = async () => {
@@ -2301,6 +2465,17 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
 
             <button
               type="button"
+              onClick={() => setIsMetricsOpen(true)}
+              className="group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-white/[0.08]"
+              aria-label="View memory and database stats"
+              title="Stats (🧠)"
+            >
+              <span className="text-lg">🧠</span>
+              <span className="hidden text-[11px] font-medium text-[var(--sd-muted)] sm:inline">Stats</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsLockConfirmOpen(true)}
               className="group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-white/[0.08]"
               aria-label="Lock Notes"
@@ -2423,7 +2598,7 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
               key={selectedNote.id}
               note={selectedNote}
               allNotes={notes}
-              onDelete={(id) => void deleteNote(id)}
+              onDelete={(id) => void handleDeleteNote(id)}
               onTitleChange={(id, title) => renameNote(id, title)}
               onContentChange={(id, content) => updateNoteContent(id, content)}
               onIconChange={(id, icon) => setNoteIcon(id, icon)}
@@ -2470,6 +2645,30 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
         theme={settings.theme}
         onSwitchDatabase={handleSwitchDatabase}
       />
+
+      <AnimatePresence>
+        {isMetricsOpen ? (
+          <MetricsModal
+            isOpen={isMetricsOpen}
+            isLoading={isMetricsLoading}
+            metrics={metrics}
+            error={metricsError}
+            onClose={() => setIsMetricsOpen(false)}
+            onRefresh={async () => {
+              setIsMetricsLoading(true)
+              setMetricsError(null)
+              try {
+                const appMetrics = await dockApi.getAppMetrics()
+                setMetrics(appMetrics)
+              } catch (error) {
+                setMetricsError(error instanceof Error ? error.message : 'Failed to load metrics.')
+              } finally {
+                setIsMetricsLoading(false)
+              }
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
 
       {authState && (
         <LockConfirmModal

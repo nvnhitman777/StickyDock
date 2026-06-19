@@ -35,6 +35,7 @@ declare global {
           OpenAppDataFolder(): Promise<void>
           GetBackupDatabasePath(): Promise<string>
           ReadDatabaseFile(path: string): Promise<Uint8Array>
+          GetAppMetrics(): Promise<AppMetrics>
           SetDatabasePath(path: string): Promise<AppState>
         }
       }
