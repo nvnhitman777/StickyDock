@@ -50,6 +50,14 @@ Please include the following in your PR description:
 - Any manual testing performed
 - Notes on Windows build / MSI packaging if applicable
 
+### Branch policy
+
+This repository requires changes to be merged through pull requests. Do not push directly to `main` unless you have explicit approval from the repository owner.
+
+- Create feature branches from `main`.
+- Open a PR and request review before merging.
+- Wait for owner approval before any changes land on `main`.
+
 ## Reporting Issues
 
 Use GitHub Issues for bug reports and feature requests. There are templates to
