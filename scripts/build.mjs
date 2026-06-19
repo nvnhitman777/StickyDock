@@ -151,7 +151,7 @@ function resolveWixExec() {
 async function signFile(filePath) {
   const pfxPath = process.env.SIGN_PFX_PATH
   if (!pfxPath) {
-    console.log('⚠️ SIGN_PFX_PATH not set; skipping code signing.')
+    console.log('⏭️  Code signing skipped (SIGN_PFX_PATH not set).')
     return
   }
 
@@ -472,7 +472,11 @@ async function createMsiInstaller(buildBinDir) {
   }
 
   await signFile(msiPath)
-  console.log(`✅ MSI created: ${msiPath}`)
+  const isSigned = process.env.SIGN_PFX_PATH ? 'signed' : 'unsigned'
+  console.log(`\n✅ ${isSigned.charAt(0).toUpperCase() + isSigned.slice(1)} MSI created: ${msiPath}`)
+  if (!process.env.SIGN_PFX_PATH) {
+    console.log('   Code signing skipped. An unsigned MSI was created successfully.')
+  }
 }
 
 const wailsExe = resolveBinary('wails', [

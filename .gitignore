@@ -24,6 +24,10 @@ wailsjs/
 .env.*.local
 .env.production.local
 
+# Code signing certificates (never commit)
+*.pfx
+*.p12
+
 # IDE & Editor files
 .vscode/
 .idea/
