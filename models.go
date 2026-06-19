@@ -42,6 +42,15 @@ type StorageInfo struct {
 	KnownDatabasePaths []string `json:"knownDatabasePaths"`
 }
 
+type AppMetrics struct {
+	MemoryUsageBytes  uint64 `json:"memoryUsageBytes"`
+	DatabaseSizeBytes int64  `json:"databaseSizeBytes"`
+	DatabasePath      string `json:"databasePath"`
+	DatabaseName      string `json:"databaseName"`
+	NotesCount        int    `json:"notesCount"`
+	Goroutines        int    `json:"goroutines"`
+}
+
 type AuthState struct {
 	IsLocked      bool   `json:"isLocked"`
 	HasPIN        bool   `json:"hasPIN"`

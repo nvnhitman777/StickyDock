@@ -55,6 +55,32 @@ func (a *App) GetStorageInfo() (StorageInfo, error) {
 	return StorageInfo{}, nil
 }
 
+func (a *App) GetAppMetrics() (AppMetrics, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	metrics := AppMetrics{
+		DatabasePath: a.config.ActiveDatabasePath,
+		DatabaseName: filepath.Base(a.config.ActiveDatabasePath),
+	}
+
+	if store, ok := a.store.(*SQLiteStore); ok {
+		storeMetrics, err := store.AppMetrics()
+		if err != nil {
+			return AppMetrics{}, err
+		}
+		metrics.DatabaseSizeBytes = storeMetrics.DatabaseSizeBytes
+		metrics.NotesCount = storeMetrics.NotesCount
+	}
+
+	var memStats sysruntime.MemStats
+	sysruntime.ReadMemStats(&memStats)
+	metrics.MemoryUsageBytes = memStats.Alloc
+	metrics.Goroutines = sysruntime.NumGoroutine()
+
+	return metrics, nil
+}
+
 func (a *App) CreateNote() (AppState, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

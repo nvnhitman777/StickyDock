@@ -1,4 +1,4 @@
-import type { AppState, StorageInfo, Theme } from '@/types/domain'
+import type { AppState, AppMetrics, StorageInfo, Theme } from '@/types/domain'
 
 function getAppApi() {
   const api = window.go?.main?.App
@@ -65,5 +65,8 @@ export const dockApi = {
   },
   readDatabaseFile(path: string): Promise<Uint8Array> {
     return getAppApi().ReadDatabaseFile?.(path) ?? Promise.reject(new Error('Not available'))
+  },
+  getAppMetrics(): Promise<AppMetrics> {
+    return getAppApi().GetAppMetrics()
   }
 }

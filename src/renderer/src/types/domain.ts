@@ -25,6 +25,15 @@ export interface StorageInfo {
   knownDatabasePaths: string[]
 }
 
+export interface AppMetrics {
+  memoryUsageBytes: number
+  databaseSizeBytes: number
+  databasePath: string
+  databaseName: string
+  notesCount: number
+  goroutines: number
+}
+
 export interface AuthState {
   isLocked: boolean
   hasPIN: boolean

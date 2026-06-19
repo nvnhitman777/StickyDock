@@ -80,6 +80,25 @@ func (s *SQLiteStore) StorageInfo() StorageInfo {
 	}
 }
 
+func (s *SQLiteStore) AppMetrics() (AppMetrics, error) {
+	var notesCount int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM notes`).Scan(&notesCount); err != nil {
+		return AppMetrics{}, err
+	}
+
+	stat, err := os.Stat(s.path)
+	if err != nil {
+		return AppMetrics{}, err
+	}
+
+	return AppMetrics{
+		DatabaseSizeBytes: stat.Size(),
+		DatabasePath:      s.path,
+		DatabaseName:      filepath.Base(s.path),
+		NotesCount:        notesCount,
+	}, nil
+}
+
 func (s *SQLiteStore) init() error {
 	statements := []string{
 		`PRAGMA foreign_keys = ON`,

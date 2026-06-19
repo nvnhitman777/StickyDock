@@ -1367,14 +1367,14 @@ export default function NoteEditor({
   const paletteStyle = paletteState.anchor ? getPalettePosition(paletteState.anchor) : getPalettePosition(null)
 
   return (
-    <div className="h-full min-h-0 px-4 py-4 lg:px-6 lg:py-6">
+    <div className="h-full min-h-0 px-4 py-4 lg:px-5 lg:py-5">
       <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[36px] bg-[rgba(9,12,18,0.62)] shadow-[0_28px_100px_rgba(0,0,0,0.36)] ring-1 ring-white/[0.05] backdrop-blur-2xl">
         <div className="flex min-h-0 flex-1 flex-col">
           {/* Modern Header */}
-          <div className="border-b border-white/[0.05] px-6 py-6 lg:px-8">
-            <div className="max-w-6xl">
+          <div className="border-b border-white/[0.05] px-4 py-3 lg:px-6">
+            <div className="w-full max-w-[min(95vw,1300px)] mx-auto">
               {/* Top Row: Icon and Title */}
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex flex-wrap items-end justify-between gap-3 mb-2">
                 <button
                   type="button"
                   onClick={() => iconInputRef.current?.click()}
@@ -1404,11 +1404,11 @@ export default function NoteEditor({
                 </div>
 
                 {/* Action Buttons - Moved to right */}
-                <div className="flex gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1.5">
+                <div className="flex gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
                   <button
                     type="button"
                     onClick={() => setIsInspectorOpen((value) => !value)}
-                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
+                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
                     aria-label="Show properties"
                     title="Properties"
                   >
@@ -1421,7 +1421,7 @@ export default function NoteEditor({
                   <button
                     type="button"
                     onClick={() => setIsLinkNotesModalOpen(true)}
-                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
+                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
                     aria-label="Link notes"
                     title="Link Notes"
                   >
@@ -1434,7 +1434,7 @@ export default function NoteEditor({
                   <button
                     type="button"
                     onClick={() => setIsTableDialogOpen(true)}
-                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
+                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
                     aria-label="Insert table"
                     title="Insert Table"
                   >
@@ -1448,7 +1448,7 @@ export default function NoteEditor({
                     type="button"
                     onClick={toggleSpeechRecognition}
                     className={[
-                      'group relative rounded-lg border p-2.5 text-lg transition',
+                      'group relative rounded-lg border p-2 text-lg transition',
                       isListening
                         ? 'border-[rgba(255,110,129,0.3)] bg-[rgba(255,110,129,0.1)]'
                         : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.1]'
@@ -1465,7 +1465,7 @@ export default function NoteEditor({
                   <button
                     type="button"
                     onClick={() => setIsMicInfoOpen(true)}
-                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
+                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
                     aria-label="Microphone help"
                     title="Mic Help"
                   >
@@ -1481,7 +1481,7 @@ export default function NoteEditor({
                       loadAudioDevices()
                       setIsAudioSettingsOpen(true)
                     }}
-                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2.5 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
+                    className="group relative rounded-lg border border-white/[0.06] bg-white/[0.04] p-2 text-lg transition hover:bg-white/[0.08] hover:border-white/[0.1]"
                     aria-label="Audio settings"
                     title="Audio Settings"
                   >
@@ -1495,7 +1495,7 @@ export default function NoteEditor({
                     type="button"
                     onClick={toggleTextToSpeech}
                     className={[
-                      'group relative rounded-lg border p-2.5 text-lg transition',
+                      'group relative rounded-lg border p-2 text-lg transition',
                       isSpeaking
                         ? 'border-[rgba(139,211,255,0.3)] bg-[rgba(139,211,255,0.1)]'
                         : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.1]'
@@ -1516,7 +1516,7 @@ export default function NoteEditor({
                         onDelete(note.id)
                       }
                     }}
-                    className="group relative rounded-lg border border-[rgba(255,110,129,0.2)] bg-[rgba(255,110,129,0.08)] p-2.5 text-lg transition hover:bg-[rgba(255,110,129,0.14)] hover:border-[rgba(255,110,129,0.3)]"
+                    className="group relative rounded-lg border border-[rgba(255,110,129,0.2)] bg-[rgba(255,110,129,0.08)] p-2 text-lg transition hover:bg-[rgba(255,110,129,0.14)] hover:border-[rgba(255,110,129,0.3)]"
                     aria-label="Delete note"
                     title="Delete Note"
                   >
@@ -1538,22 +1538,24 @@ export default function NoteEditor({
               />
 
               {/* Metadata Row */}
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-[var(--sd-muted)]">
-                <span className="flex items-center gap-1">
-                  <span className="text-sm">📅</span>
-                  Updated {formatDate(note.updatedAt)}
-                </span>
-                <span className="rounded-lg bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 text-xs font-medium text-[var(--sd-text)] uppercase tracking-wider">
-                  ✓ Autosave
-                </span>
-                {note.pinned && (
-                  <span className="rounded-lg bg-[var(--sd-accent-soft)] border border-[var(--sd-accent)]/30 px-2.5 py-1 text-xs font-medium text-[var(--sd-accent)] uppercase tracking-wider">
-                    📌 Pinned
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--sd-muted)]">
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2">
+                  <span className="flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1 text-xs font-medium text-[var(--sd-text)]">
+                    <span className="text-sm">📅</span>
+                    Updated {formatDate(note.updatedAt)}
                   </span>
-                )}
-                <span className="rounded-lg bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 text-xs font-medium text-[var(--sd-text)] uppercase tracking-wider">
-                  Priority: {currentLabel}
-                </span>
+                  <span className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 text-xs font-medium text-[var(--sd-text)] uppercase tracking-wider">
+                    ✓ Autosave
+                  </span>
+                  <span className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 text-xs font-medium text-[var(--sd-text)] uppercase tracking-wider">
+                    Priority: {currentLabel}
+                  </span>
+                  {note.pinned && (
+                    <span className="rounded-full bg-[var(--sd-accent-soft)] border border-[var(--sd-accent)]/30 px-2.5 py-1 text-xs font-medium text-[var(--sd-accent)] uppercase tracking-wider">
+                      📌 Pinned
+                    </span>
+                  )}
+                </div>
               </div>
 
               <AnimatePresence initial={false}>
@@ -1706,9 +1708,9 @@ export default function NoteEditor({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 px-6 py-4 lg:px-8 lg:py-6">
-            <div className="flex h-full min-h-0 justify-center">
-              <div className="editor-stage relative h-full min-h-0 w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/[0.05] bg-[rgba(7,10,15,0.42)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="min-h-0 flex-1 px-4 py-4 lg:px-6 lg:py-5">
+            <div className="flex h-full min-h-0 w-full">
+              <div className="editor-stage relative h-full min-h-0 w-full max-w-[min(95vw,1300px)] mx-auto overflow-hidden rounded-[28px] border border-white/[0.05] bg-[rgba(7,10,15,0.42)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
                 <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
                   <button
                     type="button"
