@@ -519,7 +519,7 @@ export default function NoteEditor({
   const toggleSpeechRecognition = () => {
     console.log('[Speech] toggleSpeechRecognition called, isListening:', isListening)
     
-    const SpeechRecognition = window.webkitSpeechRecognition || (window as any).SpeechRecognition
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
     
     if (!SpeechRecognition) {
       alert('Speech recognition not supported in this browser')
@@ -795,10 +795,11 @@ export default function NoteEditor({
 
       // Try createMediaStreamAudioSource first, fall back to createMediaStreamSource
       let source
-      if (typeof audioContext.createMediaStreamAudioSource === 'function') {
-        source = audioContext.createMediaStreamAudioSource(stream)
-      } else if (typeof audioContext.createMediaStreamSource === 'function') {
-        source = audioContext.createMediaStreamSource(stream)
+      const audioContextAny = audioContext as any
+      if (typeof audioContextAny.createMediaStreamAudioSource === 'function') {
+        source = audioContextAny.createMediaStreamAudioSource(stream)
+      } else if (typeof audioContextAny.createMediaStreamSource === 'function') {
+        source = audioContextAny.createMediaStreamSource(stream)
       } else {
         throw new Error('No media stream audio source available')
       }
@@ -1775,7 +1776,7 @@ export default function NoteEditor({
                           </button>
                           <button
                             type="button"
-                            onClick={() => editor.chain().focus().addColBefore().run()}
+                            onClick={() => editor.chain().focus().addColumnBefore().run()}
                             className="rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-xs font-medium text-[var(--sd-text)] transition hover:bg-white/[0.08]"
                             title="Add column before"
                           >
@@ -1783,7 +1784,7 @@ export default function NoteEditor({
                           </button>
                           <button
                             type="button"
-                            onClick={() => editor.chain().focus().addColAfter().run()}
+                            onClick={() => editor.chain().focus().addColumnAfter().run()}
                             className="rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 text-xs font-medium text-[var(--sd-text)] transition hover:bg-white/[0.08]"
                             title="Add column after"
                           >

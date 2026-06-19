@@ -106,12 +106,11 @@ function TreeNodeComponent({
           {/* Icon/Dot */}
           <span
             className="mt-1 h-2 w-2 shrink-0 rounded-full ring-1 ring-offset-1"
-            style={{ 
-              backgroundColor: node.note.color || 'var(--sd-accent)',
-              ringColor: 'rgba(255,255,255,0.1)'
+            style={{
+              backgroundColor: node.note.color || 'var(--sd-accent)'
             }}
           />
-          
+
           {/* Content */}
           <div className="min-w-0 flex-1 text-left">
             <p className="truncate text-xs font-semibold text-[var(--sd-text)]">

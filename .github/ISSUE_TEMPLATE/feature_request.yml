@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement or new feature for StickyDock.
+title: '[FEATURE] '
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the details below.
+  - type: input
+    id: summary
+    attributes:
+      label: Feature summary
+      description: What do you want StickyDock to do?
+      required: true
+  - type: input
+    id: motivation
+    attributes:
+      label: Why is this useful?
+      description: Describe the problem this feature solves.
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Implementation details
+      description: Optional: share any idea for how this could be implemented.
+      placeholder: |
+        Example: A pinboard view for quick access to recent notes.

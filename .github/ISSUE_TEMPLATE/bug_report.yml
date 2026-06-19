@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a bug with StickyDock.
+title: '[BUG] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the sections below.
+  - type: input
+    id: description
+    attributes:
+      label: What is the bug?
+      description: Describe the problem and where it occurs.
+      placeholder: e.g. "App crashes when saving a note."
+      required: true
+  - type: input
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps to reproduce the issue.
+      placeholder: |
+        1. Open StickyDock
+        2. Create a new note
+        3. Click Save
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+      required: true
+  - type: input
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which operating system are you using?
+      options:
+        - label: Windows
+          value: Windows
+        - label: macOS
+          value: macOS
+        - label: Linux

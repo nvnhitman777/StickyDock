@@ -151,7 +151,7 @@ function parseBlocks(content: string): MarkdownBlock[] {
   return blocks
 }
 
-function renderInline(text: string): ReactNode[] {
+function renderInline(text: string, onOpenNoteByTitle?: (title: string) => void): ReactNode[] {
   const nodes: ReactNode[] = []
   const pattern =
     /(\[\[[^\]]+\]\]|\[[^\]]+\]\((?:https?:\/\/|mailto:)[^)]+\)|https?:\/\/[^\s)]+|mailto:[^\s)]+)/gi
@@ -240,7 +240,7 @@ export function MarkdownPreview({
                 : 'text-lg'
           return (
             <h2 key={index} className={`${sizeClass} font-semibold tracking-[-0.03em]`}>
-              {renderInline(block.text)}
+              {renderInline(block.text, onOpenNoteByTitle)}
             </h2>
           )
         }
@@ -248,7 +248,7 @@ export function MarkdownPreview({
         if (block.type === 'paragraph') {
           return (
             <p key={index} className="whitespace-pre-wrap leading-7 text-[15px] text-[var(--sd-text)]">
-              {renderInline(block.text)}
+              {renderInline(block.text, onOpenNoteByTitle)}
             </p>
           )
         }
@@ -265,7 +265,7 @@ export function MarkdownPreview({
             >
               {block.items.map((item, itemIndex) => (
                 <li key={`${index}-${itemIndex}`} className="pl-2 leading-7 text-[15px]">
-                  {renderInline(item)}
+                  {renderInline(item, onOpenNoteByTitle)}
                 </li>
               ))}
             </Tag>
@@ -278,7 +278,7 @@ export function MarkdownPreview({
               key={index}
               className="rounded-[24px] border border-[var(--sd-border)] bg-[var(--sd-accent-soft)] px-4 py-4 text-[15px] leading-7 text-[var(--sd-text)]"
             >
-              {renderInline(block.text)}
+              {renderInline(block.text, onOpenNoteByTitle)}
             </blockquote>
           )
         }

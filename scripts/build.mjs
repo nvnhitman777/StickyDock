@@ -229,31 +229,31 @@ async function createInstaller(buildBinDir) {
 
   const installerScript = `Name "StickyDock"
 OutFile ${JSON.stringify(installerOutputPath)}
-InstallDir \"$LOCALAPPDATA\\Programs\\StickyDock\"
+InstallDir "$LOCALAPPDATA\\Programs\\StickyDock"
 SetShellVarContext current
-!include \"MUI2.nsh\"
+!include "MUI2.nsh"
 !define MUI_ABORTWARNING
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
-!insertmacro MUI_LANGUAGE \"English\"
+!insertmacro MUI_LANGUAGE "English"
 
-Section \"Install\"
-  SetOutPath \"$INSTDIR\"
+Section "Install"
+  SetOutPath "$INSTDIR"
   File /oname=StickyDock.exe ${JSON.stringify(exePath)}
-  CreateShortCut \"$DESKTOP\\StickyDock.lnk\" \"$INSTDIR\\StickyDock.exe\"
-  CreateShortCut \"$SMPROGRAMS\\StickyDock\\StickyDock.lnk\" \"$INSTDIR\\StickyDock.exe\"
-  WriteUninstaller \"$INSTDIR\\Uninstall.exe\"
+  CreateShortCut "$DESKTOP\\StickyDock.lnk" "$INSTDIR\\StickyDock.exe"
+  CreateShortCut "$SMPROGRAMS\\StickyDock\\StickyDock.lnk" "$INSTDIR\\StickyDock.exe"
+  WriteUninstaller "$INSTDIR\\Uninstall.exe"
 SectionEnd
 
-Section \"Uninstall\"
-  Delete \"$INSTDIR\\StickyDock.exe\"
-  Delete \"$DESKTOP\\StickyDock.lnk\"
-  Delete \"$SMPROGRAMS\\StickyDock\\StickyDock.lnk\"
-  Delete \"$INSTDIR\\Uninstall.exe\"
-  RMDir \"$SMPROGRAMS\\StickyDock\"
-  RMDir \"$INSTDIR\"
+Section "Uninstall"
+  Delete "$INSTDIR\\StickyDock.exe"
+  Delete "$DESKTOP\\StickyDock.lnk"
+  Delete "$SMPROGRAMS\\StickyDock\\StickyDock.lnk"
+  Delete "$INSTDIR\\Uninstall.exe"
+  RMDir "$SMPROGRAMS\\StickyDock"
+  RMDir "$INSTDIR"
 SectionEnd
 `
 

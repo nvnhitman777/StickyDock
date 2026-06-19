@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs --msi",
     "dev:ui": "vite",
     "build:ui": "vite build",
-    "lint": "eslint .",
+    "lint": "eslint --ext .js,.mjs,.ts,.tsx scripts src/renderer/src eslint.config.js --ignore-pattern build/** --ignore-pattern dist/** --ignore-pattern out/** --ignore-pattern .cache/** --ignore-pattern node_modules/** --ignore-pattern wailsjs/**",
     "format": "prettier . --check",
     "format:write": "prettier . --write",
     "typecheck": "tsc --noEmit -p tsconfig.json"

@@ -22,7 +22,8 @@ declare global {
             importance: number,
             pinned: boolean,
             tags: string,
-            reminderAt: string
+            reminderAt: string,
+            parentId: string
           ): Promise<AppState>
           RenameNote(id: string, title: string): Promise<AppState>
           UpdateNoteContent(id: string, content: string): Promise<AppState>
@@ -32,6 +33,8 @@ declare global {
           ReorderNotes(noteIds: string[]): Promise<AppState>
           SetTheme(theme: Theme): Promise<AppState>
           OpenAppDataFolder(): Promise<void>
+          GetBackupDatabasePath(): Promise<string>
+          ReadDatabaseFile(path: string): Promise<Uint8Array>
           SetDatabasePath(path: string): Promise<AppState>
         }
       }

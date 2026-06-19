@@ -141,8 +141,8 @@ type GraphNode = {
   title: string
   x: number
   y: number
-  vx?: number
-  vy?: number
+  vx: number
+  vy: number
   outgoing: string[]
   inbound: string[]
   parentId?: string | null
