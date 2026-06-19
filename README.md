@@ -41,6 +41,22 @@ A privacy-first desktop note-taking app with local storage, PIN-based access, an
 - Run `pnpm install`
 - Start the renderer/dev server with `pnpm dev`
 - Build the app with `pnpm build`
+  - `pnpm build` will create an MSI on Windows
+  - To sign the EXE/MSI, set `SIGN_PFX_PATH` and optionally `SIGN_PFX_PASSWORD`
+- Install WiX if you want MSI packaging support for `pnpm build`
+  - If using WiX v7 as a .NET global tool, set `WIX_BIN_PATH` to the full path to `wix.exe` or its containing directory
+
+---
+
+## 🔐 Code signing
+
+To reduce SmartScreen warnings, provide a code signing certificate in PFX format:
+
+- `SIGN_PFX_PATH` — path to your `.pfx` certificate
+- `SIGN_PFX_PASSWORD` — password for the PFX file (optional)
+- `SIGN_TIMESTAMP_URL` — timestamp server URL (default: `http://timestamp.digicert.com`)
+
+Then run `pnpm build`.
 
 ---
 
