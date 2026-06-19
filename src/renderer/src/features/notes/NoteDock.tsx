@@ -2431,16 +2431,17 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
       ) : null}
       <div className="flex h-full w-full overflow-hidden rounded-[34px] bg-[var(--sd-panel)] shadow-[0_28px_90px_rgba(0,0,0,0.38)] ring-1 ring-white/[0.04] flex-col">
         {/* VSCode-Style Toolbar */}
-        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/[0.06] bg-[rgba(11,15,21,0.6)] px-4 backdrop-blur-sm">
-          <div className="flex items-center gap-1">
-            <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--sd-text)] mr-2">StickyDock</p>
-          </div>
-          
-          {/* Toolbar Separator */}
-          <div className="h-6 w-px bg-white/[0.08]" />
-          
-          {/* Toolbar Buttons */}
-          <div className="flex gap-1">
+        <div className="flex h-12 shrink-0 items-center justify-center border-b border-white/[0.06] bg-[rgba(11,15,21,0.6)] px-3 backdrop-blur-sm">
+          <div className="flex w-full max-w-[min(95vw,1300px)] items-center gap-2">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--sd-text)] mr-2">StickyDock</p>
+            </div>
+            
+            {/* Toolbar Separator */}
+            <div className="h-6 w-px bg-white/[0.08]" />
+            
+            {/* Toolbar Buttons */}
+            <div className="flex gap-1">
             <button
               type="button"
               onClick={() => setIsGraphOpen(true)}
@@ -2497,6 +2498,7 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
             </button>
           </div>
         </div>
+      </div>
 
         {/* Main Content Container */}
         <div className="flex h-full w-full overflow-hidden flex-1">
