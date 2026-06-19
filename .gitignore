@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+
+# Build artifacts
+/build/
+/dist/
+/out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Frontend build cache
+.vite/
+.tsbuildinfo
+
+# Wails generated files (rebuild these)
+wailsjs/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Cache files
+.eslintcache
+.prettier-cache
+*.tsbuildinfo
+
+# Go build cache
+.cache/
+go.sum
+
+# Local development database files
+*.db
+*.sqlite
+*.sqlite3
+stickydock-backup*.db
+
+# OS temporary files
+.DS_Store
+Thumbs.db
+*.tmp
+.AppleDouble
+.LSOverride
+
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Platform-specific builds (keep source, ignore binaries)
+/build/bin/
+/build/windows/
+/build/linux/
+/build/darwin/

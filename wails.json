@@ -1,0 +1,22 @@
+{
+  "version": "2.12.0",
+  "name": "StickyDock",
+  "assetdir": "build",
+  "build:dir": "build",
+  "frontend:dir": ".",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build:ui",
+  "frontend:dev": "npm run dev:ui",
+  "frontend:dev:serverUrl": "http://127.0.0.1:4173",
+  "wailsjsdir": "wailsjs",
+  "outputfilename": "StickyDock",
+  "debounceMS": 100,
+  "devServer": "localhost:34115",
+  "info": {
+    "companyName": "StickyDock",
+    "productName": "StickyDock",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright 2026 StickyDock",
+    "comments": "StickyDock notes dock application"
+  }
+}
