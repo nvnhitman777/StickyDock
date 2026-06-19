@@ -3,6 +3,7 @@
 :root {
   color-scheme: dark;
   --sd-canvas: #070a0f;
+  --sd-bg: #090c14;
   --sd-panel: rgba(13, 17, 24, 0.88);
   --sd-panel-strong: rgba(16, 21, 29, 0.96);
   --sd-border: rgba(255, 255, 255, 0.06);
@@ -17,8 +18,9 @@
 :root[data-theme='light'] {
   color-scheme: light;
   --sd-canvas: #eceff4;
-  --sd-panel: rgba(255, 255, 255, 0.82);
-  --sd-panel-strong: rgba(249, 250, 252, 0.94);
+  --sd-bg: #f5f8fb;
+  --sd-panel: rgba(255, 255, 255, 0.92);
+  --sd-panel-strong: rgba(249, 250, 252, 0.98);
   --sd-border: rgba(18, 27, 39, 0.08);
   --sd-text: #111723;
   --sd-muted: #657188;

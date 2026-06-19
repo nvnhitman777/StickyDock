@@ -65,21 +65,22 @@ export function AuthScreen({ authState, onAuthenticated }: AuthScreenProps) {
   }
 
   return (
-    <div className="flex items-center justify-center w-full h-screen bg-gradient-to-br from-[var(--sd-panel)] to-[var(--sd-bg)] overflow-hidden">
+    <div className="flex items-center justify-center w-full h-screen bg-gradient-to-br from-[var(--sd-panel-strong)] to-[var(--sd-bg)] overflow-hidden">
       <div className="w-full max-w-md px-8">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🔐</div>
-          <h1 className="text-3xl font-bold text-[var(--sd-text)]">
-            {isSetup ? 'Set PIN' : 'Enter PIN'}
-          </h1>
-          <p className="text-[var(--sd-muted)] mt-2">
-            {isSetup
-              ? 'Create a 4-6 digit PIN to secure your notes'
-              : 'Enter your PIN to access your notes'}
-          </p>
-        </div>
+        <div className="rounded-[28px] border border-white/10 bg-[var(--sd-panel-strong)]/95 p-10 shadow-[0_32px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🔐</div>
+            <h1 className="text-3xl font-bold text-[var(--sd-text)]">
+              {isSetup ? 'Set PIN' : 'Enter PIN'}
+            </h1>
+            <p className="text-[var(--sd-muted)] mt-2">
+              {isSetup
+                ? 'Create a 4-6 digit PIN to secure your notes'
+                : 'Enter your PIN to access your notes'}
+            </p>
+          </div>
 
-        <div className="space-y-4">
+          <div className="space-y-4">
           {/* First PIN Input */}
           <div>
             <input
@@ -93,7 +94,7 @@ export function AuthScreen({ authState, onAuthenticated }: AuthScreenProps) {
                 if (error) setError('')
               }}
               placeholder={isSetup ? 'Enter PIN (4-6 digits)' : 'PIN'}
-              className="w-full px-4 py-3 rounded-lg border border-white/[0.06] bg-[var(--sd-panel)] text-[var(--sd-text)] text-center text-2xl tracking-widest font-mono outline-none focus:border-[var(--sd-accent)] transition"
+              className="w-full px-4 py-3 rounded-lg border border-white/[0.08] bg-[var(--sd-panel)] text-[var(--sd-text)] text-center text-2xl tracking-widest font-mono outline-none focus:border-[var(--sd-accent)] transition"
               autoFocus
             />
           </div>
@@ -145,12 +146,13 @@ export function AuthScreen({ authState, onAuthenticated }: AuthScreenProps) {
         </div>
 
         {/* Security Info */}
-        <div className="mt-8 p-4 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+        <div className="mt-8 p-4 rounded-lg bg-white/[0.06] border border-white/[0.08]">
           <p className="text-xs text-[var(--sd-muted)] leading-relaxed">
             <strong>🔒 Security:</strong> Your PIN is stored securely using SHA256 hashing. Only you can access your notes.
           </p>
         </div>
       </div>
     </div>
+  </div>
   )
 }
