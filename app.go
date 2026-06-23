@@ -15,10 +15,11 @@ import (
 )
 
 type App struct {
-	mu     sync.Mutex
-	ctx    context.Context
-	store  AppStore
-	config AppConfig
+	mu                   sync.Mutex
+	ctx                  context.Context
+	store                AppStore
+	config               AppConfig
+	sessionAuthenticated bool
 }
 
 func NewApp() (*App, error) {

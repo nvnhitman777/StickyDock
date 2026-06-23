@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -12,7 +13,9 @@ import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { markInputRule, markPasteRule, Mark, mergeAttributes } from '@tiptap/core'
+import { markInputRule, markPasteRule, Mark, mergeAttributes, Node } from '@tiptap/core'
+import CodeBlock from '@tiptap/extension-code-block'
+import { renderShikiCodeHtml } from './shikiHelper'
 import { Table } from '@tiptap/extension-table'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
@@ -23,6 +26,7 @@ import Underline from '@tiptap/extension-underline'
 import { EditorContent, useEditor, type Editor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
+import { buildSmartExplorerBlocks, classifyPasteText, type ContentBlock, type ContentType } from './contentClassifier'
 import type { Note } from '@/types/domain'
 
 type EditorCommand = {
@@ -119,6 +123,293 @@ function stripText(value: string): string {
 
 function noteGlyph(note: Note): string {
   return note.icon.trim() || 'o'
+}
+
+const navigatorChipStyles: Record<string, string> = {
+  command: 'border-[rgba(34,197,94,0.24)] bg-[rgba(34,197,94,0.12)] text-[var(--sd-text)]',
+  code: 'border-[rgba(59,130,246,0.24)] bg-[rgba(59,130,246,0.12)] text-[var(--sd-text)]',
+  sql: 'border-[rgba(234,179,8,0.24)] bg-[rgba(234,179,8,0.12)] text-[var(--sd-text)]',
+  json: 'border-[rgba(16,185,129,0.24)] bg-[rgba(16,185,129,0.12)] text-[var(--sd-text)]',
+  yaml: 'border-[rgba(249,115,22,0.24)] bg-[rgba(249,115,22,0.12)] text-[var(--sd-text)]',
+  xml: 'border-[rgba(14,165,233,0.24)] bg-[rgba(14,165,233,0.12)] text-[var(--sd-text)]',
+  table: 'border-[rgba(14,165,233,0.24)] bg-[rgba(14,165,233,0.12)] text-[var(--sd-text)]',
+  image: 'border-[rgba(168,85,247,0.24)] bg-[rgba(168,85,247,0.12)] text-[var(--sd-text)]',
+  link: 'border-[rgba(56,189,248,0.24)] bg-[rgba(56,189,248,0.12)] text-[var(--sd-text)]',
+  task: 'border-[rgba(34,197,94,0.24)] bg-[rgba(34,197,94,0.12)] text-[var(--sd-text)]',
+  error: 'border-[rgba(248,113,113,0.24)] bg-[rgba(248,113,113,0.12)] text-[var(--sd-text)]',
+  log: 'border-[rgba(251,191,36,0.24)] bg-[rgba(251,191,36,0.12)] text-[var(--sd-text)]',
+  stack: 'border-[rgba(248,113,113,0.24)] bg-[rgba(248,113,113,0.12)] text-[var(--sd-text)]',
+  callout: 'border-[rgba(59,130,246,0.24)] bg-[rgba(59,130,246,0.12)] text-[var(--sd-text)]',
+  url: 'border-[rgba(56,189,248,0.24)] bg-[rgba(56,189,248,0.12)] text-[var(--sd-text)]',
+  markdown: 'border-[rgba(148,163,184,0.24)] bg-[rgba(148,163,184,0.12)] text-[var(--sd-text)]'
+}
+
+function pluralize(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
+function countWorkspaceMetrics(html: string, explorerBlocks: ContentBlock[]) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html || '<div></div>', 'text/html')
+  const imageCount = doc.querySelectorAll('img').length
+  const linkCount = doc.querySelectorAll('a[href]').length
+  const commandCount = explorerBlocks.filter((block) => block.type === 'command').length
+  const sqlCount = explorerBlocks.filter((block) => block.type === 'sql').length
+  const codeCount = explorerBlocks.filter((block) => block.type === 'code').length
+  const jsonCount = explorerBlocks.filter((block) => block.type === 'json').length
+  const yamlCount = explorerBlocks.filter((block) => block.type === 'yaml').length
+  const xmlCount = explorerBlocks.filter((block) => block.type === 'xml').length
+  const tableCount = explorerBlocks.filter((block) => block.type === 'table').length
+  const taskCount = explorerBlocks.filter((block) => block.type === 'task').length
+  const errorCount = explorerBlocks.filter((block) => block.type === 'error').length
+  const logCount = explorerBlocks.filter((block) => block.type === 'log').length
+  const stackCount = explorerBlocks.filter((block) => block.type === 'stack').length
+  const calloutCount = explorerBlocks.filter((block) => block.type === 'callout').length
+  const summaryParts = [
+    commandCount > 0 ? pluralize(commandCount, 'Command', 'Commands') : null,
+    sqlCount > 0 ? pluralize(sqlCount, 'SQL Query', 'SQL Queries') : null,
+    codeCount > 0 ? pluralize(codeCount, 'Code block', 'Code blocks') : null,
+    jsonCount > 0 ? pluralize(jsonCount, 'JSON block', 'JSON blocks') : null,
+    tableCount > 0 ? pluralize(tableCount, 'Table', 'Tables') : null,
+    calloutCount > 0 ? pluralize(calloutCount, 'Callout', 'Callouts') : null,
+    errorCount > 0 ? pluralize(errorCount, 'Error', 'Errors') : null,
+    logCount > 0 ? pluralize(logCount, 'Log', 'Logs') : null,
+    stackCount > 0 ? pluralize(stackCount, 'Stack trace', 'Stack traces') : null,
+    imageCount > 0 ? pluralize(imageCount, 'Image', 'Images') : null,
+    taskCount > 0 ? pluralize(taskCount, 'Task', 'Tasks') : null,
+    linkCount > 0 ? pluralize(linkCount, 'Link', 'Links') : null
+  ].filter(Boolean) as string[]
+
+  const textWordCount = stripText(html).split(/\s+/).filter(Boolean).length
+  const readingTime = Math.max(1, Math.round(textWordCount / 220))
+
+  return {
+    imageCount,
+    linkCount,
+    taskCount,
+    commandCount,
+    sqlCount,
+    codeCount,
+    tableCount,
+    jsonCount,
+    yamlCount,
+    xmlCount,
+    errorCount,
+    logCount,
+    stackCount,
+    calloutCount,
+    summaryParts,
+    readingTime
+  }
+}
+
+const ShikiCodeBlock = CodeBlock.extend({
+  addAttributes() {
+    return {
+      language: {
+        default: 'text'
+      },
+      collapsed: {
+        default: false
+      },
+      wrap: {
+        default: false
+      }
+    }
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    const language = String(node.attrs.language || 'text').toLowerCase()
+    const collapsed = Boolean(node.attrs.collapsed)
+    const wrap = Boolean(node.attrs.wrap)
+
+    return [
+      'div',
+      {
+        class: 'sd-code-block-wrapper',
+        'data-language': language,
+        'data-collapsed': String(collapsed),
+        'data-wrap': String(wrap)
+      },
+      [
+        'div',
+        { class: 'sd-code-block-toolbar' },
+        ['span', { class: 'sd-code-block-label' }, language || 'text'],
+        [
+          'button',
+          {
+            type: 'button',
+            class: 'sd-code-block-action sd-code-block-copy',
+            'data-action': 'copy',
+            contenteditable: 'false'
+          },
+          'Copy'
+        ],
+        [
+          'button',
+          {
+            type: 'button',
+            class: 'sd-code-block-action sd-code-block-wrap',
+            'data-action': 'wrap',
+            contenteditable: 'false'
+          },
+          'Wrap'
+        ],
+        [
+          'button',
+          {
+            type: 'button',
+            class: 'sd-code-block-action sd-code-block-collapse',
+            'data-action': 'collapse',
+            contenteditable: 'false'
+          },
+          collapsed ? 'Expand' : 'Collapse'
+        ]
+      ],
+      [
+        'pre',
+        mergeAttributes(HTMLAttributes, {
+          class: 'sd-code-block',
+          'data-language': language,
+          'data-wrap': String(wrap)
+        }),
+        ['code', { 'data-language': language, spellCheck: 'false' }, 0]
+      ]
+    ]
+  }
+})
+
+const SectionBlock = Node.create({
+  name: 'sectionBlock',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return {
+      title: {
+        default: 'Section'
+      },
+      icon: {
+        default: '🟦'
+      },
+      color: {
+        default: '#3b82f6'
+      },
+      collapsed: {
+        default: false
+      }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="section-block"]' }]
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'div',
+      mergeAttributes({
+        'data-type': 'section-block',
+        'data-collapsed': String(HTMLAttributes.collapsed),
+        style: `--sd-section-color: ${HTMLAttributes.color}`
+      }, HTMLAttributes),
+      [
+        'div',
+        { class: 'sd-section-header' },
+        ['span', { class: 'sd-section-icon' }, HTMLAttributes.icon],
+        ['span', { class: 'sd-section-title' }, HTMLAttributes.title]
+      ],
+      ['div', { class: 'sd-section-content' }, 0]
+    ]
+  }
+})
+
+const CalloutBlock = Node.create({
+  name: 'callout',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return {
+      type: {
+        default: 'Tip'
+      },
+      icon: {
+        default: '💡'
+      },
+      color: {
+        default: '#60a5fa'
+      }
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="callout-block"]' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'div',
+      mergeAttributes({
+        'data-type': 'callout-block',
+        style: `--sd-callout-color: ${HTMLAttributes.color}`
+      }, HTMLAttributes),
+      [
+        'div',
+        { class: 'sd-callout-header' },
+        ['span', { class: 'sd-callout-icon' }, HTMLAttributes.icon],
+        ['span', { class: 'sd-callout-label' }, HTMLAttributes.type]
+      ],
+      ['div', { class: 'sd-callout-body' }, 0]
+    ]
+  }
+})
+
+function getEditorBlockElement(root: HTMLElement, block: ContentBlock): HTMLElement | null {
+  const snippet = block.previewText.slice(0, 48).replace(/\s+/g, ' ').trim()
+
+  if (block.type === 'image') {
+    const images = Array.from(root.querySelectorAll('img')) as HTMLImageElement[]
+    return images.find((img) => {
+      const target = (img.alt || img.src || '').replace(/\s+/g, ' ').trim()
+      return target.includes(snippet)
+    }) ?? null
+  }
+
+  if (block.type === 'task') {
+    const checkboxes = Array.from(root.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[]
+    return checkboxes.find((checkbox) => {
+      const label = checkbox.closest('label')?.innerText.replace(/\s+/g, ' ').trim() ?? ''
+      return label.includes(snippet)
+    }) ?? checkboxes[0] ?? null
+  }
+
+  if (block.type === 'callout') {
+    const callouts = Array.from(root.querySelectorAll('div[data-type="callout-block"]')) as HTMLElement[]
+    return callouts.find((callout) => callout.innerText.replace(/\s+/g, ' ').trim().includes(snippet)) ?? null
+  }
+
+  const candidates = Array.from(root.querySelectorAll('pre, code, blockquote, table, p, a, div[data-type="callout-block"]')) as HTMLElement[]
+  for (const candidate of candidates) {
+    const text = candidate.innerText.replace(/\s+/g, ' ').trim()
+    if (text.includes(snippet)) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
+function scrollToExplorerBlock(editor: Editor | null, block: ContentBlock): void {
+  if (!editor) {
+    return
+  }
+
+  const root = editor.view.dom as HTMLElement
+  const node = getEditorBlockElement(root, block)
+  if (!node) {
+    return
+  }
+
+  node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  node.classList.add('sd-explorer-target')
+  window.setTimeout(() => node.classList.remove('sd-explorer-target'), 2200)
 }
 
 function isImageFile(file: File): boolean {
@@ -410,6 +701,14 @@ export default function NoteEditor({
   const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false)
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>('')
+  const [collapsedBlocks, setCollapsedBlocks] = useState<Record<string, boolean>>({})
+
+  const explorerBlocks = useMemo(() => buildSmartExplorerBlocks(note.content || ''), [note.content])
+  const workspaceMetrics = useMemo(
+    () => countWorkspaceMetrics(note.content || '', explorerBlocks),
+    [note.content, explorerBlocks]
+  )
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testAudioLevel, setTestAudioLevel] = useState(0)
   const speechRecognitionRef = useRef<any>(null)
@@ -430,6 +729,59 @@ export default function NoteEditor({
 
   const openShortcutPalette = () =>
     setPaletteState({ open: true, query: '', source: 'shortcut', range: null, anchor: null })
+
+  const workspaceSummaryText = workspaceMetrics.summaryParts.length > 0
+    ? `Contains: ${workspaceMetrics.summaryParts.join(' • ')}`
+    : 'Contains no structured content yet.'
+
+  const workspaceChips = [
+    { id: 'command', icon: '💻', label: 'Commands', count: workspaceMetrics.commandCount, accent: navigatorChipStyles.command },
+    { id: 'code', icon: '🐍', label: 'Code', count: workspaceMetrics.codeCount, accent: navigatorChipStyles.code },
+    { id: 'sql', icon: '🗄️', label: 'SQL', count: workspaceMetrics.sqlCount, accent: navigatorChipStyles.sql },
+    { id: 'json', icon: '🗄️', label: 'JSON', count: workspaceMetrics.jsonCount, accent: navigatorChipStyles.json },
+    { id: 'table', icon: '📊', label: 'Tables', count: workspaceMetrics.tableCount, accent: navigatorChipStyles.table },
+    { id: 'image', icon: '🖼️', label: 'Images', count: workspaceMetrics.imageCount, accent: navigatorChipStyles.image },
+    { id: 'link', icon: '🔗', label: 'Links', count: workspaceMetrics.linkCount, accent: navigatorChipStyles.link },
+    { id: 'task', icon: '☑', label: 'Tasks', count: workspaceMetrics.taskCount, accent: navigatorChipStyles.task },
+    { id: 'error', icon: '🔥', label: 'Errors', count: workspaceMetrics.errorCount, accent: navigatorChipStyles.error },
+    { id: 'log', icon: '📋', label: 'Logs', count: workspaceMetrics.logCount, accent: navigatorChipStyles.log },
+    { id: 'stack', icon: '⚠️', label: 'Errors', count: workspaceMetrics.stackCount, accent: navigatorChipStyles.stack },
+    { id: 'callout', icon: '💬', label: 'Callouts', count: workspaceMetrics.calloutCount, accent: navigatorChipStyles.callout }
+  ].filter((chip) => chip.count > 0)
+
+  const handleWorkspaceChipClick = (type: string) => {
+    if (!editorRef.current) {
+      return
+    }
+
+    if (type === 'image') {
+      const root = editorRef.current.view.dom as HTMLElement
+      const imageNode = root.querySelector('img') as HTMLElement | null
+      if (imageNode) {
+        imageNode.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        imageNode.classList.add('sd-explorer-target')
+        window.setTimeout(() => imageNode.classList.remove('sd-explorer-target'), 2200)
+      }
+      return
+    }
+
+    if (type === 'task') {
+      const root = editorRef.current.view.dom as HTMLElement
+      const taskNode = root.querySelector('input[type="checkbox"]') as HTMLElement | null
+      if (taskNode) {
+        taskNode.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        taskNode.classList.add('sd-explorer-target')
+        window.setTimeout(() => taskNode.classList.remove('sd-explorer-target'), 2200)
+      }
+      return
+    }
+
+    const explorerType = type === 'link' ? 'url' : type
+    const block = explorerBlocks.find((block) => block.type === explorerType)
+    if (block) {
+      scrollToExplorerBlock(editorRef.current, block)
+    }
+  }
 
   const insertLink = (editor: Editor) => {
     const value = window.prompt('Link URL')
@@ -980,17 +1332,16 @@ export default function NoteEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        codeBlock: {
-          HTMLAttributes: {
-            class: 'sd-code-block'
-          }
-        },
+        codeBlock: false,
         blockquote: {
           HTMLAttributes: {
             class: 'sd-blockquote'
           }
         }
       }),
+      ShikiCodeBlock,
+      SectionBlock,
+      CalloutBlock,
       Underline,
       Highlight.configure({ multicolor: false }),
       Link.configure({
@@ -1063,6 +1414,7 @@ export default function NoteEditor({
       },
       handlePaste: (_view, event) => {
         const clipboardEvent = event as ClipboardEvent
+        const text = clipboardEvent.clipboardData?.getData('text/plain')?.trim()
         const items = Array.from(clipboardEvent.clipboardData?.items ?? [])
         const files = Array.from(clipboardEvent.clipboardData?.files ?? [])
         const imageFile =
@@ -1070,6 +1422,75 @@ export default function NoteEditor({
           items
             .map((item) => (item.kind === 'file' ? item.getAsFile() : null))
             .find((file): file is File => file !== null && isImageFile(file))
+
+        if (text) {
+          const block = classifyPasteText(text)
+          const codeTypes: Set<ContentType> = new Set([
+            'code',
+            'command',
+            'json',
+            'yaml',
+            'xml',
+            'sql',
+            'stack',
+            'log',
+            'table'
+          ])
+
+          const editorInstance = editorRef.current
+          if (editorInstance && (block.type === 'url' || codeTypes.has(block.type) || block.type === 'markdown')) {
+            clipboardEvent.preventDefault()
+
+            void (async () => {
+              if (block.type === 'url') {
+                editorInstance
+                  .chain()
+                  .focus()
+                  .insertContent({
+                    type: 'text',
+                    text: block.fullText,
+                    marks: [
+                      {
+                        type: 'link',
+                        attrs: {
+                          href: block.fullText
+                        }
+                      }
+                    ]
+                  })
+                  .run()
+                return
+              }
+
+              if (codeTypes.has(block.type)) {
+                editorInstance
+                  .chain()
+                  .focus()
+                  .insertContent({
+                    type: 'codeBlock',
+                    attrs: {
+                      language: block.language ?? 'text',
+                      collapsed: block.fullText.split('\n').length > 20,
+                      wrap: false
+                    },
+                    content: [{ type: 'text', text: block.fullText }]
+                  })
+                  .run()
+                return
+              }
+
+              if (block.type === 'markdown') {
+                editorInstance
+                  .chain()
+                  .focus()
+                  .insertContent(block.fullText)
+                  .run()
+              }
+            })()
+
+            return true
+          }
+        }
 
         if (!imageFile) {
           return false
@@ -1126,6 +1547,37 @@ export default function NoteEditor({
     }
   })
 
+  const highlightCodeBlocks = useCallback(async () => {
+    if (!editor || isPreviewMode) {
+      return
+    }
+
+    const root = editor.view.dom as HTMLElement
+    const blocks = Array.from(root.querySelectorAll('pre.sd-code-block')) as HTMLPreElement[]
+
+    await Promise.all(
+      blocks.map(async (pre) => {
+        const codeEl = pre.querySelector('code')
+        if (!codeEl) {
+          return
+        }
+
+        const rawText = codeEl.textContent ?? ''
+        const language = pre.dataset.language || 'text'
+        const highlighted = await renderShikiCodeHtml(rawText, language)
+        const wrapper = document.createElement('div')
+        wrapper.innerHTML = highlighted
+        const shikiPre = wrapper.querySelector('pre')
+
+        if (!shikiPre || pre.innerHTML === shikiPre.innerHTML) {
+          return
+        }
+
+        pre.innerHTML = shikiPre.innerHTML
+      })
+    )
+  }, [editor, isPreviewMode])
+
   useEffect(() => {
     if (!editor) {
       return
@@ -1141,6 +1593,56 @@ export default function NoteEditor({
 
     editor.setEditable(!isPreviewMode)
   }, [editor, isPreviewMode])
+
+  useEffect(() => {
+    void highlightCodeBlocks()
+  }, [editor, note.content, highlightCodeBlocks])
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    const root = editor.view.dom as HTMLElement
+    const handleCodeAction = async (event: MouseEvent) => {
+      const button = (event.target as HTMLElement)?.closest('button.sd-code-block-action') as HTMLButtonElement | null
+      if (!button) {
+        return
+      }
+
+      const wrapper = button.closest('.sd-code-block-wrapper') as HTMLElement | null
+      if (!wrapper) {
+        return
+      }
+
+      const action = button.dataset.action
+      const pre = wrapper.querySelector('pre.sd-code-block') as HTMLElement | null
+      if (!action || !pre) {
+        return
+      }
+
+      if (action === 'copy') {
+        const codeText = pre.innerText
+        await navigator.clipboard.writeText(codeText)
+        return
+      }
+
+      if (action === 'wrap') {
+        wrapper.dataset.wrap = wrapper.dataset.wrap === 'true' ? 'false' : 'true'
+        return
+      }
+
+      if (action === 'collapse') {
+        wrapper.dataset.collapsed = wrapper.dataset.collapsed === 'true' ? 'false' : 'true'
+        return
+      }
+    }
+
+    root.addEventListener('click', handleCodeAction)
+    return () => {
+      root.removeEventListener('click', handleCodeAction)
+    }
+  }, [editor])
 
   useEffect(() => {
     if (!editor) {
@@ -1558,6 +2060,40 @@ export default function NoteEditor({
                 </div>
               </div>
 
+              <div className="mt-4 rounded-[28px] border border-white/[0.05] bg-white/[0.04] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-[var(--sd-muted)]">
+                    {workspaceSummaryText}
+                  </p>
+                  <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--sd-muted)]">
+                    {workspaceMetrics.readingTime} min read
+                  </span>
+                </div>
+
+                {workspaceChips.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {workspaceChips.map((chip) => (
+                      <button
+                        type="button"
+                        key={chip.id}
+                        onClick={() => handleWorkspaceChipClick(chip.id)}
+                        className="rounded-full border border-white/[0.08] bg-black/10 px-3 py-2 text-xs font-medium text-[var(--sd-text)] transition hover:border-[var(--sd-accent)] hover:bg-white/[0.08]"
+                      >
+                        <span className="mr-2">{chip.icon}</span>
+                        {chip.label}
+                        <span className="ml-2 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-[var(--sd-muted)]">
+                          {chip.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-dashed border-white/[0.08] bg-black/5 px-4 py-3 text-xs text-[var(--sd-muted)]">
+                    Workspace dashboard is waiting for structured content. Add commands, SQL, images, tasks or links to make it visible.
+                  </div>
+                )}
+              </div>
+
               <AnimatePresence initial={false}>
                 {isInspectorOpen ? (
                   <motion.section
@@ -1709,7 +2245,7 @@ export default function NoteEditor({
           </div>
 
           <div className="min-h-0 flex-1 px-4 py-4 lg:px-6 lg:py-5">
-            <div className="flex h-full min-h-0 w-full">
+            <div className="flex h-full min-h-0 w-full gap-5 xl:flex-row flex-col">
               <div className="editor-stage relative h-full min-h-0 w-full max-w-[min(95vw,1300px)] mx-auto overflow-hidden rounded-[28px] border border-white/[0.05] bg-[rgba(7,10,15,0.42)] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
                 <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
                   <button
@@ -1723,6 +2259,18 @@ export default function NoteEditor({
                     ].join(' ')}
                   >
                     {isPreviewMode ? 'Preview' : 'Edit'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsExplorerOpen((value) => !value)}
+                    className={[
+                      'rounded-full border px-3 py-2 text-xs transition backdrop-blur xl:hidden',
+                      isExplorerOpen
+                        ? 'border-[var(--sd-accent)] bg-[var(--sd-accent-soft)] text-[var(--sd-text)]'
+                        : 'border-white/[0.08] bg-[rgba(12,16,22,0.65)] text-[var(--sd-text)] hover:bg-[rgba(12,16,22,0.85)]'
+                    ].join(' ')}
+                  >
+                    {isExplorerOpen ? 'Explorer' : 'Open Explorer'}
                   </button>
                 </div>
                 {editor ? (
@@ -1823,19 +2371,65 @@ export default function NoteEditor({
                       </div>
                     </BubbleMenu>
 
-                    {isPreviewMode ? (
-                      <div 
-                        ref={previewContainerRef}
-                        className="sd-markdown prose prose-invert max-w-none overflow-auto p-6 text-[var(--sd-text)]"
-                      >
-                        <div
-                          dangerouslySetInnerHTML={{ __html: note.content }}
-                          className="prose prose-invert max-w-none"
-                        />
+                    <div className="flex h-full min-h-0 flex-col">
+                      <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-[rgba(7,10,15,0.95)] px-4 py-4 backdrop-blur-sm">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-[10px] uppercase tracking-[0.24em] text-[var(--sd-muted)]">Note navigator</p>
+                            <p className="text-sm font-semibold text-[var(--sd-text)]">Live summary of note content</p>
+                          </div>
+                          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--sd-muted)]">
+                            {workspaceSummaryText}
+                          </span>
+                        </div>
+
+                        {workspaceChips.length > 0 ? (
+                          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                            {workspaceChips.map((chip) => (
+                              <button
+                                type="button"
+                                key={chip.id}
+                                onClick={() => handleWorkspaceChipClick(chip.id)}
+                                className={[
+                                  'inline-flex min-w-max items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold transition shadow-sm',
+                                  chip.accent
+                                ].join(' ')}
+                              >
+                                <span>{chip.icon}</span>
+                                <span>{chip.label}</span>
+                                <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] text-[var(--sd-text)]">
+                                  {chip.count}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 rounded-full border border-dashed border-white/[0.08] bg-black/10 px-4 py-3 text-xs text-[var(--sd-muted)]">
+                            This note has no structured navigator items yet. Add commands, code, SQL, images, links, tasks, tables, or errors.
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <EditorContent editor={editor} className="h-full" />
-                    )}
+
+                      <div className="flex-1 min-h-0 overflow-auto">
+                        {isPreviewMode ? (
+                          <div
+                            ref={previewContainerRef}
+                            className="sd-markdown prose prose-invert max-w-none overflow-auto p-6 text-[var(--sd-text)]"
+                          >
+                            <div
+                              dangerouslySetInnerHTML={{ __html: note.content }}
+                              className="prose prose-invert max-w-none"
+                            />
+                          </div>
+                        ) : (
+                          <EditorContent
+                            editor={editor}
+                            className="h-full min-h-0 overflow-auto scroll-smooth"
+                            style={{ touchAction: 'auto' }}
+                          />
+                        )}
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-[var(--sd-muted)]">
@@ -1843,12 +2437,167 @@ export default function NoteEditor({
                   </div>
                 )}
               </div>
+              <aside className="hidden xl:flex w-[320px] shrink-0 flex-col gap-4 overflow-y-auto rounded-[28px] border border-white/[0.05] bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-2 rounded-[24px] border border-white/[0.06] bg-[rgba(255,255,255,0.04)] px-4 py-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-[var(--sd-muted)]">Smart Explorer</p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--sd-text)]">Detected content blocks</p>
+                  </div>
+                  <span className="text-sm">📂</span>
+                </div>
+                <div className="space-y-3">
+                  {explorerBlocks.length === 0 ? (
+                    <div className="rounded-[20px] border border-white/[0.06] bg-black/10 p-4 text-sm text-[var(--sd-muted)]">
+                      Paste content to see smart blocks and quick navigation.
+                    </div>
+                  ) : (
+                    explorerBlocks.map((block) => {
+                      const collapsed = Boolean(collapsedBlocks[block.id])
+                      return (
+                        <div
+                          key={block.id}
+                          className="rounded-[22px] border border-white/[0.06] bg-black/10 p-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--sd-text)]">
+                                {block.icon} {block.label}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[var(--sd-muted)]">
+                                {block.language ?? 'auto detected'}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => void navigator.clipboard.writeText(block.fullText)}
+                                className="rounded-full border border-white/[0.08] bg-white/[0.06] px-3 py-1 text-[11px] text-[var(--sd-text)] transition hover:bg-white/[0.1]"
+                              >
+                                Copy
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCollapsedBlocks((prev) => ({
+                                    ...prev,
+                                    [block.id]: !prev[block.id]
+                                  }))
+                                }
+                                className="rounded-full border border-white/[0.08] bg-white/[0.06] px-3 py-1 text-[11px] text-[var(--sd-text)] transition hover:bg-white/[0.1]"
+                              >
+                                {collapsed ? 'Expand' : 'Collapse'}
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => scrollToExplorerBlock(editor, block)}
+                            className="mt-3 w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-sm text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+                          >
+                            {collapsed ? 'Jump to block' : block.previewText || 'View block'}
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </aside>
             </div>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
+        {isExplorerOpen ? (
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm xl:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsExplorerOpen(false)}
+          >
+            <motion.div
+              className="absolute inset-y-0 right-0 w-full max-w-[360px] overflow-hidden rounded-l-[32px] border-l border-white/[0.08] bg-[rgba(13,18,25,0.96)] shadow-[0_-10px_60px_rgba(0,0,0,0.4)]"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.2 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[var(--sd-muted)]">Smart Explorer</p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--sd-text)]">Detected content blocks</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsExplorerOpen(false)}
+                  className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="h-full overflow-y-auto p-4">
+                {explorerBlocks.length === 0 ? (
+                  <div className="rounded-[20px] border border-white/[0.06] bg-black/10 p-4 text-sm text-[var(--sd-muted)]">
+                    Paste content to see smart blocks and quick navigation.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {explorerBlocks.map((block) => {
+                      const collapsed = Boolean(collapsedBlocks[block.id])
+                      return (
+                        <div
+                          key={block.id}
+                          className="rounded-[22px] border border-white/[0.06] bg-black/10 p-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--sd-text)]">
+                                {block.icon} {block.label}
+                              </p>
+                              <p className="mt-1 text-[11px] text-[var(--sd-muted)]">
+                                {block.language ?? 'auto detected'}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => void navigator.clipboard.writeText(block.fullText)}
+                                className="rounded-full border border-white/[0.08] bg-white/[0.06] px-3 py-1 text-[11px] text-[var(--sd-text)] transition hover:bg-white/[0.1]"
+                              >
+                                Copy
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCollapsedBlocks((prev) => ({
+                                    ...prev,
+                                    [block.id]: !prev[block.id]
+                                  }))
+                                }
+                                className="rounded-full border border-white/[0.08] bg-white/[0.06] px-3 py-1 text-[11px] text-[var(--sd-text)] transition hover:bg-white/[0.1]"
+                              >
+                                {collapsed ? 'Expand' : 'Collapse'}
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => scrollToExplorerBlock(editor, block)}
+                            className="mt-3 w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-left text-sm text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+                          >
+                            {collapsed ? 'Jump to block' : block.previewText || 'View block'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
         {paletteState.open ? (
           <motion.div
             className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm"

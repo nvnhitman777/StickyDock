@@ -32,18 +32,21 @@ func (a *App) LockDatabase() (bool, error) {
 	defer a.mu.Unlock()
 
 	result, err := a.store.LockApp()
-	fmt.Printf("[Backend] LockDatabase called, result: %v, err: %v\n", result, err)
+	if err == nil && result {
+		a.sessionAuthenticated = false
+	}
+	fmt.Printf("[Backend] LockDatabase called, result: %v, sessionAuthenticated: %v, err: %v\n", result, a.sessionAuthenticated, err)
 	return result, err
 }
 
-// UnlockDatabase unlocks the app after successful PIN verification
+// UnlockDatabase unlocks the app for this session after successful PIN verification
 func (a *App) UnlockDatabase() (bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	result, err := a.store.UnlockApp()
-	fmt.Printf("[Backend] UnlockDatabase called, result: %v, err: %v\n", result, err)
-	return result, err
+	a.sessionAuthenticated = true
+	fmt.Printf("[Backend] UnlockDatabase called, sessionAuthenticated: %v\n", a.sessionAuthenticated)
+	return true, nil
 }
 
 // GetAuthStatus returns the current auth status
@@ -52,6 +55,20 @@ func (a *App) GetAuthStatus() (AuthState, error) {
 	defer a.mu.Unlock()
 
 	state, err := a.store.GetAuthState()
-	fmt.Printf("[Backend] GetAuthStatus called, IsLocked: %v, HasPIN: %v, err: %v\n", state.IsLocked, state.HasPIN, err)
-	return state, err
+	if err != nil {
+		return AuthState{}, err
+	}
+	state.IsAuthenticated = a.sessionAuthenticated
+	fmt.Printf("[Backend] GetAuthStatus called, IsLocked: %v, HasPIN: %v, IsAuthenticated: %v, err: %v\n", state.IsLocked, state.HasPIN, state.IsAuthenticated, err)
+	return state, nil
+}
+
+// ResetSessionAuthentication clears any current in-memory auth session
+func (a *App) ResetSessionAuthentication() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.sessionAuthenticated = false
+	fmt.Printf("[Backend] ResetSessionAuthentication called, sessionAuthenticated: %v\n", a.sessionAuthenticated)
+	return nil
 }

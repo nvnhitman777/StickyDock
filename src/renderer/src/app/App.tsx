@@ -7,6 +7,16 @@ export default function App(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    const resetSession = async () => {
+      try {
+        await (window as any).go.main.App.ResetSessionAuthentication()
+      } catch {
+        // Ignore failures during reset
+      }
+    }
+
+    window.addEventListener('beforeunload', resetSession)
+
     async function loadAuthState() {
       try {
         console.log('[Auth] Loading auth state...')
@@ -30,7 +40,12 @@ export default function App(): JSX.Element {
       }
     }
 
+    void resetSession()
     void loadAuthState()
+
+    return () => {
+      window.removeEventListener('beforeunload', resetSession)
+    }
   }, [])
 
   if (isLoading || authState === null) {

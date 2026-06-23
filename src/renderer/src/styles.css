@@ -102,6 +102,9 @@ button {
   letter-spacing: -0.008em;
   font-variant-ligatures: contextual;
   text-rendering: optimizeLegibility;
+  overflow: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sd-editor-content.ProseMirror > *:first-child {
@@ -164,6 +167,90 @@ button {
 .sd-editor-content.ProseMirror pre code {
   background: transparent;
   padding: 0;
+}
+
+.sd-code-block-wrapper {
+  position: relative;
+  margin: 1rem 0;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 14, 20, 0.95);
+  overflow: hidden;
+}
+
+.sd-code-block-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  backdrop-filter: blur(12px);
+  background: rgba(12, 16, 22, 0.88);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sd-code-block-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #d7dae0;
+  text-transform: capitalize;
+}
+
+.sd-code-block-action {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sd-text);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sd-code-block-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.sd-code-block {
+  width: 100%;
+  overflow: auto;
+  background: transparent;
+  margin: 0;
+  font-family: 'JetBrains Mono', 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre;
+  tab-size: 4;
+  padding: 1rem;
+}
+
+.sd-code-block-wrapper[data-collapsed='true'] .sd-code-block {
+  max-height: 12.5rem;
+  overflow: hidden;
+}
+
+.sd-code-block-wrapper[data-wrap='true'] .sd-code-block {
+  white-space: pre-wrap;
+  word-break: normal;
+}
+
+.sd-code-block-wrapper[data-wrap='true'] .shiki {
+  white-space: pre-wrap;
+}
+
+.sd-code-block-wrapper[data-collapsed='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4rem;
+  background: linear-gradient(180deg, transparent, rgba(7, 10, 15, 0.95));
+  pointer-events: none;
 }
 
 .sd-editor-content.ProseMirror a.sd-link {
@@ -257,6 +344,11 @@ button {
   height: 0;
 }
 
+.sd-editor-content.ProseMirror {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
 .sd-editor-content.ProseMirror::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -265,8 +357,45 @@ button {
 .sd-editor-content.ProseMirror::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
+  transition: background 0.2s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+
+.sd-editor-content.ProseMirror:hover::-webkit-scrollbar-thumb,
+.sd-editor-content.ProseMirror:focus-within::-webkit-scrollbar-thumb {
+  opacity: 1;
 }
 
 .sd-editor-content.ProseMirror::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.sd-code-block::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.sd-code-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sd-code-block::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.sd-explorer-target {
+  animation: sd-explorer-highlight 2.2s ease forwards;
+}
+
+@keyframes sd-explorer-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(123, 200, 255, 0.35);
+  }
+  40% {
+    box-shadow: 0 0 0 16px rgba(123, 200, 255, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }

@@ -283,6 +283,29 @@ const defaultPreferences: AppPreferences = {
   oneDriveConnected: false
 }
 
+const viewModeStorageKey = 'stickydock.viewMode'
+
+function loadViewMode(): 'application' | 'browser' {
+  try {
+    const stored = window.localStorage.getItem(viewModeStorageKey)
+    if (stored === 'application' || stored === 'browser') {
+      return stored
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  return 'application'
+}
+
+function saveViewMode(value: 'application' | 'browser'): void {
+  try {
+    window.localStorage.setItem(viewModeStorageKey, value)
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function loadPreferences(): AppPreferences {
   try {
     const raw = window.localStorage.getItem(preferencesStorageKey)
@@ -305,7 +328,12 @@ function savePreferences(preferences: AppPreferences): void {
 }
 
 function openExternalUrl(url: string): void {
-  window.runtime?.BrowserOpenURL?.(url)
+  if (window.runtime?.BrowserOpenURL) {
+    window.runtime.BrowserOpenURL(url)
+    return
+  }
+
+  window.open(url, '_blank', 'noopener')
 }
 
 function ThemePill({
@@ -1000,7 +1028,7 @@ function SettingsModal({
                     </button>
                     <button
                       type="button"
-                      onClick={() => openExternalUrl('https://github.com')}
+                      onClick={() => openExternalUrl('https://github.com/nvnhitman777/StickyDock')}
                       className="rounded-[18px] border border-[var(--sd-border)] bg-white/5 px-4 py-3 text-sm text-[var(--sd-text)] transition hover:bg-white/10"
                     >
                       GitHub repository
@@ -1811,6 +1839,13 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
   const [reminderPopup, setReminderPopup] = useState<ReminderPopup | null>(null)
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'application' | 'browser'>(loadViewMode)
+  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
+  const viewMenuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    saveViewMode(viewMode)
+  }, [viewMode])
 
   useEffect(() => {
     void hydrate().finally(() => setIsHydrated(true))
@@ -1821,6 +1856,7 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
       try {
         const state = await (window as any).go.main.App.GetAuthStatus()
         setAuthState(state)
+        setIsAuthenticated(state.isAuthenticated ?? false)
       } catch (err) {
         console.error('Failed to load auth state:', err)
       }
@@ -1904,6 +1940,23 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
       void reloadAuthState()
     }
   }, [isDatabasePickerOpen])
+
+  useEffect(() => {
+    if (!isViewMenuOpen) {
+      return
+    }
+
+    const handleDismiss = (event: MouseEvent) => {
+      if (viewMenuRef.current?.contains(event.target as Node)) {
+        return
+      }
+      setIsViewMenuOpen(false)
+    }
+
+    window.addEventListener('mousedown', handleDismiss)
+
+    return () => window.removeEventListener('mousedown', handleDismiss)
+  }, [isViewMenuOpen])
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId) ?? null
   const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -2144,6 +2197,7 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
             onAuthenticated={() => {
               console.log('[Auth] User authenticated via workspace AuthScreen')
               setIsAuthenticated(true)
+              setAuthState((prev) => prev ? { ...prev, isAuthenticated: true } : prev)
               // Unlock the database for this session
               void (window as any).go.main.App.UnlockDatabase()
             }}
@@ -2442,6 +2496,55 @@ export default function NoteDock({ authState: initialAuthState, onSetAuthState }
             
             {/* Toolbar Buttons */}
             <div className="flex gap-1">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsViewMenuOpen((value) => !value)}
+                className={['group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition',
+                  viewMode === 'browser'
+                    ? 'border border-[var(--sd-accent)] bg-[var(--sd-accent-soft)] text-[var(--sd-text)]'
+                    : 'border border-white/[0.08] bg-white/[0.04] text-[var(--sd-text)] hover:bg-white/[0.08]'
+                ].join(' ')}
+                aria-label="Switch application and browser view"
+                title="View Mode"
+              >
+                <span className="text-lg">🌐</span>
+                <span className="hidden text-[11px] font-medium text-[var(--sd-muted)] sm:inline">{viewMode === 'application' ? 'App' : 'Browser'}</span>
+              </button>
+
+              {isViewMenuOpen ? (
+                <div
+                  ref={viewMenuRef}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  className="absolute right-0 mt-2 w-52 rounded-2xl border border-white/[0.08] bg-[rgba(7,10,15,0.96)] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('application')
+                      setIsViewMenuOpen(false)
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+                  >
+                    <span>Application view</span>
+                    {viewMode === 'application' ? <span>✓</span> : null}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('browser')
+                      setIsViewMenuOpen(false)
+                      openExternalUrl(window.location.href)
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-[var(--sd-text)] transition hover:bg-white/[0.08]"
+                  >
+                    <span>View in browser</span>
+                    {viewMode === 'browser' ? <span>✓</span> : null}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
             <button
               type="button"
               onClick={() => setIsGraphOpen(true)}
